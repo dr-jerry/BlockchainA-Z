@@ -4,53 +4,44 @@ import json
 from flask import Flask, jsonify
 
 class Blockchain:
-    def __init__(self):
-        self.chain = []
-        self.create_block(proof = 1, previous_hash = '0')
+    def __init__(self, previous_block, data):
+        self.timestamp = str(datetime.datetime.now)
+        self.data = data;
+        self.previous_block = previous_block
+        if (previous_block != None) :
+            self.previous_hash = previous_block.current_hash
+        else :
+            self.previous_hash = "0" * 64
+        self.nonce, self.current_hash = self.mine()
+        print(self.nonce)
 
-    def create_block(self, proof, previous_hash):
-        block = {'index': len(self.chain) + 1,
-                 'timestamp': str(datetime.datetime.now)
-                 , 'proof': proof
-                 , 'previous_hash' : previous_hash}
-        self.chain.append(block)
-        return block
-
-    def get_previous_block(self):
-        return self.chain[-1]
-
-    def trial(self, new_proof, previous_proof):
-        hash_trial = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()).hexdigest()
-        return hash_trial[:4] == '0000'
+    def make_block(self, nonce) :
+        return self.data + self.timestamp + self.previous_hash + str(nonce)
         
-    def proof_of_work(self, previous_proof):
-        new_proof=0
-        check_proof = False
-        while check_proof is False:
-            new_proof += 1
-            check_proof = self.trial(new_proof, previous_proof)
-        return new_proof
+    def mine(self) :
+        nonce = 0;
+        while (not self.verify_hash(hashlib.sha256(self.make_block(nonce).encode()).hexdigest())):
+            nonce += 1
+        return nonce, hashlib.sha256(self.make_block(nonce).encode()).hexdigest()
 
-    def hash(self, block):
-        encoded_block = json.dumps(block, sort_keys=True).encode()
+    def verify_hash(self, hash_trial):
+        return hash_trial[:4] == '00000'
 
-        return hashlib.sha256(encode_block).hexdigest()
-
-    def is_chain_valid(self, chain):
-        previous_block = chain[0]
-        block_index = 1
-        while block_index < len(self.chain):
-            block = block_index[block_index]
-            if block['previous_hash'] != self.hash(previous_block):
-                return False
-            if not self.trial(block['proof'], previous_block['proof']):
-                return False
-            previous_block = block
-            block_index += 1
-        return True
+    def is_chain_valid(self):
+        if (hashlib.sha256(self.make_block(self.nonce).encode()).hexdigest() == self.current_hash and self.verify_hash(self.current_hash)):
+            if (self.previous_hash == '0' * 64):
+                return True
+            else:
+                return self.previous_block.is_chain_valid()
+        else:
+            return False
 
 
+genesis = Blockchain(None, "genesis")
+bc1 = Blockchain(genesis, "jeroen passed blockchain exam")
+bc2 = Blockchain(bc1, "david transfers 500 btc to jeroen")
+bc3 = Blockchain(bc2, "david votes for Trump")
+print(bc3.current_hash + " is valid " + str(bc3.is_chain_valid()))
 
-bc = Blockchain()
-block = bc.create_block(bc.proof_of_work(0),0)
-print(block)
+bc1.data = "jeroen passed valid contracts exam"
+print( bc3.is_chain_valid())
