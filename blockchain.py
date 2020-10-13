@@ -25,14 +25,14 @@ class Blockchain:
         return nonce, hashlib.sha256(self.make_block(nonce).encode()).hexdigest()
 
     def verify_hash(self, hash_trial):
-        return hash_trial[:4] == '00000'
+        return hash_trial[:4] == '0000'
 
     def is_chain_valid(self):
         if (hashlib.sha256(self.make_block(self.nonce).encode()).hexdigest() == self.current_hash and self.verify_hash(self.current_hash)):
             if (self.previous_hash == '0' * 64):
                 return True
             else:
-                return self.previous_block.is_chain_valid()
+                return self.previous_hash == self.previous_block.current_hash and self.previous_block.is_chain_valid()
         else:
             return False
 
